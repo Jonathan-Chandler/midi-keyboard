@@ -5,7 +5,7 @@ call mingw32-make
 echo.
 if errorlevel 1 goto build_failed
 
-call midi.exe
+call bin\midi.exe
 goto exit_make
 
 :build_failed

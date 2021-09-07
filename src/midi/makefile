@@ -1,7 +1,7 @@
-INCLUDES = -I../../inc/midi
+INCLUDES = -I../../inc/midi -I../../inc
 SOURCES = $(wildcard *.cpp)
 OBJS = $(SOURCES:%.cpp=../../build/midi/%.o)
-OBJ_NAME = ../../midi.exe
+OBJ_NAME = ../../bin/midi.exe
 
 ../../build/midi/%.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@ $(LIBS)

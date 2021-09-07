@@ -1,6 +1,8 @@
 #ifndef __CHORD_HPP__
 #define __CHORD_HPP__
 #include <vector>
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 
 #if 0
 The NOTE ON message is structured as follows:
@@ -37,19 +39,20 @@ Byte 0 = 0x90, Byte 1 = 89, Byte 2 = 57
 class ChordClass
 {
   public:
-    ChordClass(){};
-    void print_note(std::vector<unsigned char> &message);
+    ChordClass();
+    void readMessage( double deltatime, std::vector< unsigned char > *message, void *userData );
+    void setNoteState(unsigned char pitch, unsigned char velocity);
 
-//  private:
-    /* There are TWO conventions for numbering keys (notes) in MIDI. The most common is the one below where MIDDLE C
-     * (note #60; $3C) is C3 (C in the 3rd octave). However, another convention was adopted by Yamaha Corp. for their
-     * synthesizer products which parallels the Octave Designation System used in Music Education formulated by the
-     * Acoustical Society of America. In that convention, Middle C is designated "C4". The "C3 Convention" is the most
-     * commonly used octave designation system on standard MIDI keyboards */
+    void drawToWindow(sf::RenderWindow *window);
 
-    // Middle C4 = 60
-    // G3 = 67
-    // A | A# | B | C | C# | D | D# | E | F | F# | G | G#
+    void print_note(std::vector<unsigned char> *message);
+    void printState();
+    void printChord();
+
+  private:
+    bool m_noteState[128];
+    void drawNotes(sf::RenderWindow *window);
+    void drawClef(sf::RenderWindow *window);
 };
 
 #endif // __CHORD_HPP__

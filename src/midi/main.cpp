@@ -1,4 +1,6 @@
 // midiprobe.cpp
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 #include <windows.h>
 #include <iostream>
 #include <cstdlib>
@@ -9,24 +11,33 @@
 #include <thread>
 #include "chord.hpp"
 
+ChordClass *chordConvert;
 
-// SLEEP milliseconds
-#define SLEEP(x) std::this_thread::sleep_for(std::chrono::milliseconds(x))
-
-bool done;
-static void finish(int ignore){done=true;}
+void readMessageWrapper( double deltatime, std::vector< unsigned char > *message, void *userData )
+{
+  chordConvert->readMessage( deltatime, message, userData );
+}
 
 int main()
 {
-  ChordClass chordConvert;
+  sf::RenderWindow window;
   RtMidiIn  *midiin = 0;
   std::vector<unsigned char> message;
-  int nBytes;
-//  int i;
-//  double stamp;
+  std::string input;
+
+  try 
+  {
+    chordConvert = new ChordClass();
+  }
+  catch (std::exception& e)
+  {
+    std::cerr << "Error creating chord class" << e.what() << std::endl;
+    exit( EXIT_FAILURE );
+  }
 
   // RtMidiIn constructor
-  try {
+  try 
+  {
     midiin = new RtMidiIn(RtMidi::Api::WINDOWS_MM);
   }
   catch ( RtMidiError &error ) {
@@ -45,7 +56,7 @@ int main()
     }
     catch ( RtMidiError &error ) {
       error.printMessage();
-      goto cleanup;
+      goto cleanExit;
     }
     std::cout << "  Input Port #" << i+1 << ": " << portName << '\n';
   }
@@ -54,62 +65,47 @@ int main()
 
   // Don't ignore sysex, timing, or active sensing messages.
   midiin->ignoreTypes( false, false, false );
-  // Install an interrupt handler function.
-  done = false;
-  (void) signal(SIGINT, finish);
-  // Periodically check input queue.
-  std::cout << "Reading MIDI from port ... quit with Ctrl-C.\n";
-  while ( !done ) 
-  {
-    midiin->getMessage( &message );
-    //stamp = midiin->getMessage( &message );
-    nBytes = message.size();
 
-    if (nBytes > 1)
+  // callback for midi messages
+  midiin->setCallback( readMessageWrapper );
+
+  window.create(sf::VideoMode(800, 600), "Notes");
+  while (window.isOpen())
+  {
+    // check all the window's events that were triggered since the last iteration of the loop
+    sf::Event event;
+    while (window.pollEvent(event))
     {
-      chordConvert.print_note(message);
-      //for ( i=0; i<nBytes; i++ )
-      //{
-      //  std::cout << "Byte " << i << " = " << std::hex << std::uppercase << (int)message[i] << ", ";
-      //}
-      //std::cout << "stamp = " << stamp << std::endl;
+      // close with escape
+      if (event.type == sf::Event::KeyPressed)
+      {
+        if (event.key.code == sf::Keyboard::Escape)
+          window.close();
+      }
+
+      // "close requested" event: we close the window
+      if (event.type == sf::Event::Closed)
+        window.close();
     }
 
-    // Sleep for 10 milliseconds ... platform-dependent.
-    //SLEEP( 10 );
-    Sleep(10);
-    //std::cout << "test" << std::endl;
+    // clear the window with black color
+    window.clear(sf::Color::White);
+
+    //window.draw(chordConvert->drawNotes());
+    chordConvert->drawToWindow(&window);
+
+    // draw everything here...
+    //window.draw(...);
+
+    // end the current frame
+    window.display();
   }
 
- cleanup:
+  //std::cout << "Press enter to quit" << std::endl;
+  //std::getline(std::cin, input);
+
+ cleanExit:
   delete midiin;
+  delete chordConvert;
   return 0;
 }
-
-#if 0
-  RtMidiOut *midiout = 0;
-  // RtMidiOut constructor
-  try {
-    midiout = new RtMidiOut();
-  }
-  catch ( RtMidiError &error ) {
-    error.printMessage();
-    exit( EXIT_FAILURE );
-  }
-  // Check outputs.
-  nPorts = midiout->getPortCount();
-  std::cout << "\nThere are " << nPorts << " MIDI output ports available.\n";
-  for ( unsigned int i=0; i<nPorts; i++ ) {
-    try {
-      portName = midiout->getPortName(i);
-    }
-    catch (RtMidiError &error) {
-      error.printMessage();
-      goto cleanup;
-    }
-    std::cout << "  Output Port #" << i+1 << ": " << portName << '\n';
-  }
-  std::cout << '\n';
-  // Clean up
-  delete midiout;
-#endif
