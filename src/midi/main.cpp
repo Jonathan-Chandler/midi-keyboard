@@ -9,13 +9,13 @@
 #include "RtMidi.h"
 #include <chrono>
 #include <thread>
-#include "chord.hpp"
+#include "note.hpp"
 
-ChordClass *chordConvert;
+NoteClass *noteConvert;
 
 void readMessageWrapper( double deltatime, std::vector< unsigned char > *message, void *userData )
 {
-  chordConvert->readMessage( deltatime, message, userData );
+  noteConvert->readMessage( deltatime, message, userData );
 }
 
 int main()
@@ -27,11 +27,12 @@ int main()
 
   try 
   {
-    chordConvert = new ChordClass();
+    noteConvert = new NoteClass();
   }
   catch (std::exception& e)
   {
-    std::cerr << "Error creating chord class" << e.what() << std::endl;
+    std::cerr << "Error creating note class" << e.what() << std::endl;
+    return 0;
     exit( EXIT_FAILURE );
   }
 
@@ -46,7 +47,12 @@ int main()
   }
 
   // Check inputs.
-  unsigned int nPorts = midiin->getPortCount();
+  unsigned int nPorts;
+  nPorts = midiin->getPortCount();
+  if (nPorts == 0)
+  {
+    return 0;
+  }
 
   std::cout << "\nThere are " << nPorts << " MIDI input sources available.\n";
   std::string portName;
@@ -61,7 +67,14 @@ int main()
     std::cout << "  Input Port #" << i+1 << ": " << portName << '\n';
   }
   
-  midiin->openPort( 0 );
+  try 
+  {
+    midiin->openPort( 0 );
+  }
+  catch ( RtMidiError &error ) {
+    error.printMessage();
+    goto cleanExit;
+  }
 
   // Don't ignore sysex, timing, or active sensing messages.
   midiin->ignoreTypes( false, false, false );
@@ -69,7 +82,18 @@ int main()
   // callback for midi messages
   midiin->setCallback( readMessageWrapper );
 
-  window.create(sf::VideoMode(800, 600), "Notes");
+  // create display
+  try 
+  {
+    window.create(sf::VideoMode(800, 600), "Notes");
+  }
+  catch (std::exception& e)
+  {
+    std::cerr << "Error creating window" << e.what() << std::endl;
+    return 0;
+    exit( EXIT_FAILURE );
+  }
+
   while (window.isOpen())
   {
     // check all the window's events that were triggered since the last iteration of the loop
@@ -91,21 +115,15 @@ int main()
     // clear the window with black color
     window.clear(sf::Color::White);
 
-    //window.draw(chordConvert->drawNotes());
-    chordConvert->drawToWindow(&window);
-
-    // draw everything here...
-    //window.draw(...);
+    //window.draw(noteConvert->drawNotes());
+    noteConvert->drawToWindow(&window);
 
     // end the current frame
     window.display();
   }
 
-  //std::cout << "Press enter to quit" << std::endl;
-  //std::getline(std::cin, input);
-
  cleanExit:
   delete midiin;
-  delete chordConvert;
+  delete noteConvert;
   return 0;
 }
