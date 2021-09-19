@@ -1,5 +1,6 @@
 #ifndef __NOTE_HPP__
 #define __NOTE_HPP__
+#include "chord.hpp"
 #include <vector>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -35,13 +36,14 @@ Byte 0 = 0x90, Byte 1 = 89, Byte 2 = 57
 #define MESSAGE_TYPE_MASK     (0xF << MESSAGE_TYPE_OFFSET) // 0xF0
 #define MESSAGE_NOTE_ON       0x90
 #define MESSAGE_NOTE_OFF      0x80
+#define MAX_NOTES_PER_BAR     32
 
 #define NOTE_COUNT        128
-#define MAX_NOTES_PER_BAR 32
 
 class NoteClass
 {
-  enum {A,A_S,B,C,C_S,D,D_S,E,F,F_S,G,G_S};
+  private:
+    enum {A,A_S,B,C,C_S,D,D_S,E,F,F_S,G, G_S, NUM_NOTES};
 
   public:
     NoteClass();
@@ -56,13 +58,15 @@ class NoteClass
 
   private:
     // on 88-key midi - m_noteState[0] == A0; m_noteState[87] == C8
+    ChordClass m_chordClass;
     int m_noteCount;
-    char m_lowestNote;
+    char m_rootIndex;
 
     bool  m_noteState[NOTE_COUNT];
     float m_noteX[MAX_NOTES_PER_BAR];
     float m_noteY[NOTE_COUNT];
 
+    int16_t getChordBitmask();
     void drawNotes(sf::RenderWindow *window);
     void drawClef(sf::RenderWindow *window);
     std::vector<char> getAllNoteValues();

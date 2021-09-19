@@ -1,13 +1,16 @@
 #include "note.hpp"
+#include "chord.hpp"
 #include <iostream>
 #define C_HEIGHT 7.6f
 
 NoteClass::NoteClass()
-  : m_noteCount(0),
-    m_lowestNote(-1)
+  : m_chordClass()
+  , m_noteCount(0)
+  , m_rootIndex(-1)
 {
   // C B A# A B# G# G F# F E D# D C# 
   static float yOffsetsTreble[] = {C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT, C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT};
+
   // B A# A B# G# G F# F E D# D C# C
   static float yOffsetsBass[] = {C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT, C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT, 0.f, C_HEIGHT};
 
@@ -35,7 +38,7 @@ NoteClass::NoteClass()
 
 void NoteClass::printState()
 {
-  static const char note[][3] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+  static const std::string note[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
   std::cout << m_noteCount << " notes down: " << std::endl;
   for (size_t i = 0; i < sizeof(m_noteState)/sizeof(bool); i++)
@@ -47,6 +50,17 @@ void NoteClass::printState()
       std::cout << note[note_index] << octave << std::endl;
     }
   }
+
+  if (m_noteCount == 2)
+  {
+    m_chordClass.printIntervalNames(getChordBitmask());
+  }
+
+  if (m_noteCount >=3)
+  {
+    m_chordClass.printChordName(note[m_rootIndex%12], getChordBitmask());
+  }
+
   std::cout << std::endl;
 }
 
@@ -108,19 +122,38 @@ void NoteClass::setNoteState(unsigned char pitch, unsigned char velocity)
     return;
   }
 
+  // set new note state
   if (velocity)
   {
     if (!m_noteState[pitch])
-      ++m_noteCount;
+      m_noteCount++;
 
     m_noteState[pitch] = true;
   }
   else
   {
     if (m_noteState[pitch])
-      --m_noteCount;
-
+      m_noteCount--;
+ 
     m_noteState[pitch] = false;
+  }
+
+  // move root to next lowest note
+  if (m_noteCount == 0)
+  {
+    m_rootIndex = NOTE_COUNT;
+  }
+  else
+  {
+    for (size_t i = 0; i < NOTE_COUNT; i++)
+    {
+      if (m_noteState[i])
+      {
+        m_rootIndex = i;
+        std::cout << "new root note index = " << int(m_rootIndex) << std::endl;
+        break;
+      }
+    }
   }
 }
 
@@ -159,19 +192,14 @@ void NoteClass::drawNotes(sf::RenderWindow *window)
   sf::CircleShape currentNote(7.f);
   currentNote.setFillColor(sf::Color(0, 0, 0));
 
-  // treble clef
   for (size_t i = 0; i < sizeof(m_noteState)/sizeof(bool); i++)
   {
     if (m_noteState[i])
     {
-      // currentNote.setPosition(275.f, 115.f); // middle C
-      // currentNote.setPosition(275.f, 45.f);  // E
-      currentNote.setPosition(275.f, m_noteY[i]); // middle C
+      currentNote.setPosition(275.f, m_noteY[i]);
       window->draw(currentNote);
     }
   }
-
-  // bass clef
 }
 
 std::string NoteClass::getNoteName(char note)
@@ -183,6 +211,23 @@ std::string NoteClass::getNoteName(char note)
 
   return std::string(noteArray[note_index]);
 }
+
+#if 0
+std::vector<char> NoteClass::getAllNoteValues()
+{
+  std::vector<char> noteValues;
+
+  for (size_t i = 0; i < sizeof(m_noteState)/sizeof(bool); i++)
+  {
+    if (m_noteState[i])
+    {
+      noteValues.push_back(i);
+    }
+  }
+
+  return noteNames;
+}
+#endif
 
 std::vector<std::string> NoteClass::getNoteNameVector()
 {
@@ -197,5 +242,29 @@ std::vector<std::string> NoteClass::getNoteNameVector()
   }
 
   return noteNames;
+}
+
+int16_t NoteClass::getChordBitmask()
+{
+  int16_t chordBitmask = 0;
+
+  // not enough notes to create bitmask
+  if (m_noteCount <= 1)
+  {
+    return 0;
+  }
+
+  size_t interval = 0;
+  for (size_t i = m_rootIndex; i < NOTE_COUNT; interval++,i++)
+  {
+    if (m_noteState[i])
+    {
+      //std::cout << "match index " << i << std::endl;
+      chordBitmask |= 1 << (interval % 12);
+    }
+  }
+
+  chordBitmask >>= 1;
+  return chordBitmask;
 }
 
