@@ -44,6 +44,14 @@ class ChordClass
     P8 = PERFECT_OCTAVE,
   };
 
+  // inversions
+  //    perfect -> perfect
+  //    major -> minor
+  //    aug -> dim
+
+  //    second -> seventh
+  //    third -> sixth
+  //    fourth -> fifth
   enum triads
   {
     ROOT_POSITION,
@@ -64,16 +72,42 @@ class ChordClass
     TRIAD_TYPE_COUNT
   };
 
+  enum sevenChords
+  {
+    ROOT_7_POSITION,
+    MAJOR_7 = ROOT_7_POSITION,
+    MINOR_7,
+    DOMINANT_7,
+//    AUGMENTED_7,
+//    DIMINISHED_7,
+//
+//    FIRST_INVERSION,
+//    MAJOR_1_7 = FIRST_INVERSION,
+//    MINOR_1_7,
+//    DIMINISHED_1_7,
+//
+//    SECOND_INVERSION,
+//    MAJOR_2_7 = SECOND_INVERSION,
+//    MINOR_2_7,
+//    DIMINISHED_2_7,
+    SEVEN_CHORD_TYPE_COUNT
+  };
+
   static const std::string intervalName[INTERVAL_TYPE_COUNT];
   static const std::string triadName[TRIAD_TYPE_COUNT];
+  static const std::string sevenChordName[SEVEN_CHORD_TYPE_COUNT];
   static const int16_t intervalBitmask[];
   static const int16_t triadBitmask[];
+  static const int16_t sevenChordBitmask[SEVEN_CHORD_TYPE_COUNT];
 
   public:
     ChordClass();
 
     //getChordName(std::vector<char> keys);
     void printChordName(std::string rootNote, int16_t chordBitmask);
+    void printTriadName(std::string rootNote, int16_t chordBitmask);
+    void printSevenChordName(std::string rootNote, int16_t chordBitmask);
+    
     //void printChordName(std::vector<std::string> notes, int16_t chordBitmask)
     void printIntervalNames(int16_t chordBitmask);
 };
